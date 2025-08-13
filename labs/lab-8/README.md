@@ -1,59 +1,30 @@
-Lab 8: Implementing Basic Security
-Task 8.1: Configure Security Headers
-Edit your main Nginx config or a specific site config (e.g., /etc/nginx/sites-available/load-balancer).
+# Lab 8 — Nginx Secure Site Configuration
 
-Inside the server block, add:
+## Overview
+This lab focuses on configuring an **Nginx virtual host** with advanced security features, including:
+- Security HTTP headers
+- Rate limiting
+- IP-based access control
+- Custom port binding
+- Verification with `curl`
 
-nginx
-Copy
-Edit
-add_header X-Content-Type-Options nosniff;
-add_header X-Frame-Options SAMEORIGIN;
-add_header X-XSS-Protection "1; mode=block";
-add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-These help prevent:
+---
 
-MIME sniffing attacks
+## Objectives
+1. Create a secure Nginx virtual host.
+2. Apply industry-standard security headers.
+3. Restrict access to sensitive paths using IP allowlisting.
+4. Implement request rate limiting.
+5. Verify functionality and security with `curl`.
 
-Clickjacking
+---
 
-XSS
+## Configuration Details
 
-Weak HTTPS configurations
+-    **Virtual Host File**  
+`/etc/nginx/sites-available/secure-site`
 
-Task 8.2: Configure Rate Limiting in Main Config
-In /etc/nginx/nginx.conf inside the http {} block:
-
-nginx
-Copy
-Edit
-limit_req_zone $binary_remote_addr zone=one:10m rate=5r/s;
-Then inside your server block:
-
-nginx
-Copy
-Edit
-location / {
-    limit_req zone=one burst=10 nodelay;
-    proxy_pass http://backend_servers;
-}
-This limits clients to 5 requests per second, with bursts up to 10.
-
-Task 8.3: Create Secure Website Content
-bash
-Copy
-Edit
-sudo mkdir -p /var/www/secure-site
-sudo tee /var/www/secure-site/index.html > /dev/null <<EOF
-<h1>Secure Site</h1>
-<p>This site is protected with security headers, rate limiting, and IP controls.</p>
-EOF
-Task 8.4: Enable and Test Security Configuration
-Create config /etc/nginx/sites-available/secure-site:
-
-nginx
-Copy
-Edit
+```
 server {
     listen 8087;
     server_name secure.local;
@@ -61,58 +32,98 @@ server {
     root /var/www/secure-site;
     index index.html;
 
-    add_header X-Content-Type-Options nosniff;
-    add_header X-Frame-Options SAMEORIGIN;
+    # Security Headers
+    add_header X-Content-Type-Options "nosniff";
+    add_header X-Frame-Options "SAMEORIGIN";
     add_header X-XSS-Protection "1; mode=block";
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
 
+    # Rate Limiting
+    limit_req_zone $binary_remote_addr zone=mylimit:10m rate=10r/s;
     location / {
-        limit_req zone=one burst=10 nodelay;
+        limit_req zone=mylimit burst=20 nodelay;
+        try_files $uri $uri/ =404;
+    }
+
+    # Restrict /admin to specific IPs
+    location /admin {
+        allow 192.168.1.0/24;
+        deny all;
+        try_files $uri $uri/ =404;
+    }
+
+    # Error Pages
+    error_page 403 /error/403.html;
+    error_page 404 /error/404.html;
+
+    location /error/ {
+        internal;
     }
 }
-Task 8.5: Test Security Headers
-bash
-Copy
-Edit
-curl -I http://secure.local:8087/
-Look for the added security headers in the output.
+```
+-    # Steps Performed
 
-Task 8.6: Test IP Access Control
-Inside the server block:
+1. Create Web Root & Test Files
+```
+sudo mkdir -p /var/www/secure-site/admin /var/www/secure-site/error
+echo "Secure Site" | sudo tee /var/www/secure-site/index.html
+echo "Admin Area" | sudo tee /var/www/secure-site/admin/index.html
+echo "403 Forbidden" | sudo tee /var/www/secure-site/error/403.html
+echo "404 Not Found" | sudo tee /var/www/secure-site/error/404.html
+```
+2. Enable Site & Test
+```
+sudo ln -s /etc/nginx/sites-available/secure-site /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+3. Verify with curl
 
-nginx
-Copy
-Edit
-location /admin {
-    allow 192.168.1.100;  # Replace with your IP
-    deny all;
-}
-Task 8.7: Test Rate Limiting
-Run:
+-    Check headers on main site
+```curl -I http://secure.local:8087```
 
-bash
-Copy
-Edit
-ab -n 20 -c 10 http://secure.local:8087/
-You should see 503 Service Temporarily Unavailable when exceeding limits.
+- <img width="1110" height="494" alt="Screenshot (185)" src="https://github.com/user-attachments/assets/c429daa8-9f79-4899-86c1-4fdd228d291e" />
 
-Task 8.8: Create Security Monitoring Script
-Example basic check:
 
-bash
-Copy
-Edit
-#!/bin/bash
-LOG=/var/log/nginx/access.log
-if grep -q "403" $LOG; then
-    echo "ALERT: Forbidden access detected on $(date)" >> /var/log/nginx/security_alerts.log
-fi
-Make executable:
+-    Check admin path
+```
+curl -I http://secure.local:8087/admin
+curl -I http://secure.local:8087/admin/
+```
 
-bash
-Copy
-Edit
-chmod +x /usr/local/bin/nginx-security-check.sh
-Schedule with cron to run every minute.
+- <img width="1103" height="492" alt="Screenshot (183)" src="https://github.com/user-attachments/assets/5f7370c3-78f3-4d32-8b3a-cd3811b5a51b" />
 
+- <img width="1114" height="503" alt="Screenshot (186)" src="https://github.com/user-attachments/assets/b7712b2d-5027-4e7a-a558-a48cd8938f45" />
+
+-    Expected results:
+
+        *    200 OK for / and /admin/ (if allowed IP)
+
+        *    403 Forbidden for /admin from disallowed IP
+
+        *    Security headers present in all responses
+
+-    Verification Output
+
+-    *    Main site
+```
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+X-XSS-Protection: 1; mode=block
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+```
+
+-    *    Admin (allowed IP)
+```
+
+HTTP/1.1 200 OK
+
+```
+
+-    *    Admin (denied IP)
+
+```
+HTTP/1.1 403 Forbidden
+```
 
