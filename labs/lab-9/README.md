@@ -1,88 +1,65 @@
-Lab 9 — Troubleshooting and Monitoring
-Task 9.1: Create Intentional Configuration Errors
+# Lab 9 — Troubleshooting and Monitoring
+### Task 9.1: Create Intentional Configuration Errors
 Create safe, reversible mistakes to practice debugging.
 
 A. Bad directive (syntax error)
-
-bash
-Copy
-Edit
+```
 # Add this WRONG line inside any server{} temporarily
 echo '    listen eighty;' | sudo tee -a /etc/nginx/sites-available/secure-site
 sudo nginx -t
 # Expect: syntax error near "eighty"
+```
 B. Port conflict
-
-bash
-Copy
-Edit
+```
 # Duplicate a listen to conflict with another server
 sudo sed -i '0,/listen 8087;/s//listen 8086;/' /etc/nginx/sites-available/secure-site
 sudo nginx -t
 # Might pass syntax but fail to (re)start if 8086 already used
+```
 C. Missing root
-
-bash
-Copy
-Edit
+```
 # Point root to a non-existent directory
 sudo sed -i 's|root /var/www/secure-site;|root /var/www/secure-site-missing;|' /etc/nginx/sites-available/secure-site
 sudo nginx -t && sudo systemctl reload nginx
 # Then curl to get 404 or log errors
-You’ll revert these in Task 9.2.
+```
 
-Task 9.2: Practice Troubleshooting
+### Task 9.2: Practice Troubleshooting
 Standard workflow that’ll save you in prod:
 
 Syntax
-
-bash
-Copy
-Edit
+```
 sudo nginx -t
+```
 Service health & last logs
-
-bash
-Copy
-Edit
+```
 sudo systemctl status nginx --no-pager -l
 sudo journalctl -u nginx -n 50 --no-pager
+```
 Which ports are listening?
-
-bash
-Copy
-Edit
+```
 sudo ss -tulnp | grep nginx
+```
 Active vhosts & includes
-
-bash
-Copy
-Edit
+```
 nginx -T | less   # shows merged, final config
+```
 Access & error logs (tail live)
-
-bash
-Copy
-Edit
+```
 sudo tail -n 50 -f /var/log/nginx/error.log /var/log/nginx/access.log
+```
 Revert the intentional errors now:
-
-bash
-Copy
-Edit
+```
 # Revert "listen eighty;" and wrong port
 sudo sed -i '/listen eighty;/d' /etc/nginx/sites-available/secure-site
 sudo sed -i 's/listen 8086;/listen 8087;/' /etc/nginx/sites-available/secure-site
 # Revert missing root
 sudo sed -i 's|root /var/www/secure-site-missing;|root /var/www/secure-site;|' /etc/nginx/sites-available/secure-site
-
 sudo nginx -t && sudo systemctl reload nginx
-Task 9.3: Create Monitoring Scripts
+```
+### Task 9.3: Create Monitoring Scripts
 Create a lightweight process & port watcher.
-
-bash
-Copy
-Edit
+```
 # /usr/local/bin/nginx-watch.sh
 sudo tee /usr/local/bin/nginx-watch.sh > /dev/null <<'EOF'
 #!/bin/bash
@@ -106,18 +83,14 @@ if ! curl -sI http://secure.local:8087/ >/dev/null; then
 fi
 EOF
 sudo chmod +x /usr/local/bin/nginx-watch.sh
+```
 Run once to test:
-
-bash
-Copy
-Edit
+```
 sudo /usr/local/bin/nginx-watch.sh && tail -n 20 /var/log/nginx/monitor.log
-Task 9.4: Create Log Analysis Script
+```
+### Task 9.4: Create Log Analysis Script
 Summarize status codes, top IPs, and hot paths from access logs.
-
-bash
-Copy
-Edit
+```
 # /usr/local/bin/nginx-analyze.sh
 sudo tee /usr/local/bin/nginx-analyze.sh > /dev/null <<'EOF'
 #!/bin/bash
@@ -137,18 +110,14 @@ echo "-- 4xx/5xx last 50 lines --"
 tail -n 50 "$ACCESS" | awk '$9 ~ /4[0-9][0-9]|5[0-9][0-9]/ {print}'
 EOF
 sudo chmod +x /usr/local/bin/nginx-analyze.sh
+```
 Run:
-
-bash
-Copy
-Edit
+```
 sudo /usr/local/bin/nginx-analyze.sh
-Task 9.5: Create Health Check Script
+```
+### Task 9.5: Create Health Check Script
 Check status, latency, and headers; fail on slow/5xx.
-
-bash
-Copy
-Edit
+```
 # /usr/local/bin/nginx-health.sh
 sudo tee /usr/local/bin/nginx-health.sh > /dev/null <<'EOF'
 #!/bin/bash
@@ -171,75 +140,56 @@ fi
 exit 0
 EOF
 sudo chmod +x /usr/local/bin/nginx-health.sh
+```
 Run:
-
-bash
-Copy
-Edit
+```
 /usr/local/bin/nginx-health.sh
-Task 9.6: Set Up Automated Monitoring
+```
+### Task 9.6: Set Up Automated Monitoring
 Use cron to run watchers periodically.
-
-bash
-Copy
-Edit
+```
 # Open root's crontab
 sudo crontab -e
+```
 Add:
-
-perl
-Copy
-Edit
+```
 # Run every minute
 * * * * * /usr/local/bin/nginx-watch.sh >> /var/log/nginx/monitor.log 2>&1
 # Analyze logs every 5 minutes
 */5 * * * * /usr/local/bin/nginx-analyze.sh >> /var/log/nginx/analysis.log 2>&1
 # Health check every minute
 * * * * * /usr/local/bin/nginx-health.sh >> /var/log/nginx/health.log 2>&1
+```
 Verify after a few minutes:
-
-bash
-Copy
-Edit
+```
 sudo tail -n 50 /var/log/nginx/monitor.log
 sudo tail -n 50 /var/log/nginx/analysis.log
 sudo tail -n 50 /var/log/nginx/health.log
-Task 9.7: Test Monitoring and Alerting
+```
+### Task 9.7: Test Monitoring and Alerting
 Trigger some conditions and confirm logs:
 
 Latency & 5xx: Temporarily break upstream or add a sleep in a backend to slow it down, then:
-
-bash
-Copy
-Edit
+```
 /usr/local/bin/nginx-health.sh
 tail -n 20 /var/log/nginx/health.log
+```
 Port/Process down:
-
-bash
-Copy
-Edit
+```
 sudo systemctl stop nginx
 sudo /usr/local/bin/nginx-watch.sh
 sudo systemctl start nginx
+```
 Burst traffic (rate limiting/4xx):
-
-bash
-Copy
-Edit
+```
 ab -n 200 -c 50 http://secure.local:8087/
 sudo /usr/local/bin/nginx-analyze.sh
+```
 You should see warnings/alerts appended to the log files accordingly.
 
-Task 9.8: Create Troubleshooting Playbook
-Save this as TROUBLESHOOTING.md (or add to your README):
+### Task 9.8: Nginx Troubleshooting Playbook
 
-markdown
-Copy
-Edit
-# Nginx Troubleshooting Playbook
-
-## Quick Checks
+#### Quick Checks
 - Syntax: `sudo nginx -t`
 - Service: `sudo systemctl status nginx --no-pager -l`
 - Logs: `sudo tail -F /var/log/nginx/error.log`
