@@ -1,4 +1,5 @@
 ### Lab 6: Setting Up Reverse Proxy
+---
 -    Task 6.1: Create a Simple Backend Server
         *    We’ll use Python’s built-in HTTP server as our backend.
 ```
