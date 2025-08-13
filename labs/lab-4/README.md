@@ -40,7 +40,7 @@ sudo nano /etc/nginx/sites-available/mysite
 
 ```
 server {
-    listen 8081;
+    listen 4000;
     server_name mysite.local;
 
     root /var/www/mysite;
@@ -60,8 +60,11 @@ sudo systemctl reload nginx
 -    Test in browser:
 
 ```
-http://<server-ip>:8081/
+http://localhost:4000
 ```
+<img width="1064" height="585" alt="Screenshot (165)" src="https://github.com/user-attachments/assets/d12c34de-f8cd-4814-be32-d71f8f7e84ad" />
+
+---
 -    If on local machine, add to /etc/hosts:
 ```
 sudo nano /etc/hosts
