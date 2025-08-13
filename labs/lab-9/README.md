@@ -1,6 +1,5 @@
 # Lab 9 — Troubleshooting and Monitoring
 ### Task 9.1: Create Intentional Configuration Errors
-Create safe, reversible mistakes to practice debugging.
 
 A. Bad directive (syntax error)
 ```
@@ -25,7 +24,7 @@ sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ### Task 9.2: Practice Troubleshooting
-Standard workflow that’ll save you in prod:
+-  Standard workflow that’ll save you in prod:
 
 Syntax
 ```
