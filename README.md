@@ -1,6 +1,6 @@
-### Web Servers Labs
+# Web Servers Labs
 ---
--  Lab 1: Environment Setup and Basic Exploration
+- ### Lab 1: Environment Setup and Basic Exploration
 
     *  Task 1.1: Check if Nginx is Installed 
     *  Task 1.2: Install Nginx (if needed)
@@ -9,7 +9,7 @@
 
 ---
 
--  Lab 2: Installation and File System Exploration
+- ### Lab 2: Installation and File System Exploration
   
     *  Task 2.1: Verify Installation Directories
     *  Task 2.2: Examine Default Configuration
@@ -18,7 +18,7 @@
 
 ---
 
--  Lab 3: Basic Configuration Modification
+- ### Lab 3: Basic Configuration Modification
   
     *  Task 3.1: Create a Custom HTML Page
     *  Task 3.2: Test Configuration Syntax
@@ -27,7 +27,7 @@
 
 ---
 
--  Lab 4: Serving Static Content and Assets 
+- ### Lab 4: Serving Static Content and Assets 
 
     *  Task 4.1: Create Website Structure
     *  Task 4.2: Create JavaScript File
@@ -37,7 +37,7 @@
 
 ---
 
--  Lab 5: Creating Multiple Virtual Hosts
+- ### Lab 5: Creating Multiple Virtual Hosts
   
     *  Task 5.1: Create Multiple Website Directories
     *  Task 5.2: Create Content for Company Site
@@ -50,7 +50,7 @@
 
 ---
 
--  Lab 6: Setting Up Reverse Proxy
+- ### Lab 6: Setting Up Reverse Proxy
   
     *  Task 6.1: Create a Simple Backend Server
     *  Task 6.2: Start the Backend Server
@@ -61,7 +61,7 @@
 
 ---
 
--  Lab 7: Load Balancing Setup
+- ### Lab 7: Load Balancing Setup
   
     *  Task 7.1: Create Multiple Backend Servers
     *  Task 7.2: Start All Backend Servers
@@ -74,7 +74,7 @@
 
 ---
 
--  Lab 8: Implementing Basic Security 
+- ### Lab 8: Implementing Basic Security 
 
     *  Task 8.1: Configure Security Headers
     *  Task 8.2: Configure Rate Limiting in Main Config
@@ -87,7 +87,7 @@
 
 ---
 
--  Lab 9: Troubleshooting and Monitoring 
+- ### Lab 9: Troubleshooting and Monitoring 
 
     *  Task 9.1: Create Intentional Configuration Errors
     *  Task 9.2: Practice Troubleshooting
